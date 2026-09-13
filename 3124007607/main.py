@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Sequence
-from pathlib import Path               
+from pathlib import Path
 
 from plagiarism_checker import calculate_similarity
 
