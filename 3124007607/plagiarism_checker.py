@@ -20,7 +20,10 @@ def _character_ngrams(text: str, size: int) -> Counter[str]:
 
     if len(text) < size:
         return Counter()
-    return Counter(text[index : index + size] for index in range(len(text) - size + 1))
+
+    # 使用内置的 zip 和 join 构造滑动窗口，减少 Python 层循环调用。
+    shifted_texts = (text, *(text[offset:] for offset in range(1, size)))
+    return Counter(map("".join, zip(*shifted_texts, strict=False)))
 
 
 def _cosine_similarity(left: Counter[str], right: Counter[str]) -> float:
@@ -58,12 +61,16 @@ def calculate_similarity(original: str, suspected: str) -> float:
         _character_ngrams(normalized_original, 2),
         _character_ngrams(normalized_suspected, 2),
     )
+
+    # 两字符文本没有三元组；没有公共二元组时也不可能存在公共三元组。
+    if min(len(normalized_original), len(normalized_suspected)) < 3:
+        return bigram_score
+    if bigram_score == 0.0:
+        return 0.0
+
     trigram_score = _cosine_similarity(
         _character_ngrams(normalized_original, 3),
         _character_ngrams(normalized_suspected, 3),
     )
 
-    # 短字符串可能不包含三元组，避免命中他们.
-    if min(len(normalized_original), len(normalized_suspected)) < 3:
-        return bigram_score
     return max(0.0, min(1.0, 0.6 * bigram_score + 0.4 * trigram_score))
